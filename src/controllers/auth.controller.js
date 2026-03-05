@@ -123,98 +123,89 @@ export const loginToken = async (req,res) => {
 }
 
 export const login = async (req, res) => {  
-    const { email, password, notificationToken } = req.body
+    try {
+        const { email, password, notificationToken } = req.body
 
-    const user = await User.findOne({ email })
+        console.log("LOGIN REQUEST:", { email, notificationToken });
 
-    if (user.activeDevices.length == 1) {
-        return res.sendStatus(429);
+        const user = await User.findOne({ email })
+
+        console.log("USER FOUND:", user ? user._id : "NOT FOUND");
+
+        if (!user) {
+            console.log("USER NOT FOUND");
+            return res.sendStatus(401);
+        }
+
+        console.log("ACTIVE DEVICES BEFORE:", user.activeDevices);
+
+        if (!Array.isArray(user.activeDevices)) {
+            console.log("activeDevices NÃO É ARRAY. Corrigindo...");
+            user.activeDevices = [];
+        }
+
+        console.log("ACTIVE DEVICES LENGTH:", user.activeDevices.length);
+
+        if (user.activeDevices.length == 1) {
+            console.log("LIMIT OF DEVICES REACHED");
+            return res.sendStatus(429);
+        }
+
+        if (notificationToken) {
+            console.log("UPDATING NOTIFICATION TOKEN");
+            await User.updateOne(
+                { _id: user._id },
+                { $set: { notificationToken } }
+            );
+        }
+
+        const ok = await bcrypt.compare(password, user.password)
+
+        console.log("PASSWORD MATCH:", ok);
+
+        if (!ok) return res.sendStatus(401)
+
+        if (user.status !== 'active') {
+            console.log("USER NOT ACTIVE:", user.status);
+            return res.sendStatus(401)
+        }
+
+        const deviceId = crypto.randomUUID(); 
+        console.log("DEVICE ID GENERATED:", deviceId);
+
+        const accessToken = jwt.sign(
+        { sub: user._id, role: user.role, tv: user.tokenVersion },
+        process.env.JWT_SECRET,
+        { expiresIn: '15m' }
+        )
+
+        const refreshToken = jwt.sign(
+        { sub: user._id, tv: user.tokenVersion, deviceId: deviceId },
+        process.env.JWT_SECRET,
+        { expiresIn: '30d' }
+        )
+
+        console.log("TOKENS CREATED");
+
+        const updatedUser = await User.findByIdAndUpdate(
+        user._id,
+        { $push: { activeDevices: { deviceId, refreshToken } } },
+        { new: true }
+        )
+
+        console.log("UPDATED USER ACTIVE DEVICES:", updatedUser.activeDevices);
+
+        return res.json({
+            accesstoken: accessToken,
+            RefreshToken: refreshToken
+        });
+
+    } catch (error) {
+        console.error("LOGIN ERROR:", error);
+        return res.sendStatus(500);
     }
-
-    if (!user) {
-        // avoid leaking which emails exist
-        return res.sendStatus(401);
-    }
-
-    // update notification token if provided
-    if (notificationToken) {
-        await User.updateOne(
-            { _id: user._id },
-            { $set: { notificationToken } }
-        );
-    }
-
-    const ok = await bcrypt.compare(password, user.password)
-
-    if (!ok) return res.sendStatus(401)
-
-    if ( user.status !== 'active' && ok) {
-        return res.sendStatus(401)
-    }
-    const deviceId = crypto.randomUUID(); 
-
-    const accessToken = jwt.sign(
-    { sub: user._id, role: user.role, tv: user.tokenVersion },
-    process.env.JWT_SECRET,
-    { expiresIn: '15m' }
-    )
-
-    const refreshToken = jwt.sign(
-    { sub: user._id, tv: user.tokenVersion, deviceId: deviceId },
-    process.env.JWT_SECRET,
-    { expiresIn: '30d' }
-    )
-    
-    // make sure activeDevices exists
-    if (!Array.isArray(user.activeDevices)) {
-        user.activeDevices = [];
-    }
-
-    // push new device entry so refresh token is stored
-    const updatedUser = await User.findByIdAndUpdate(
-    user._id,
-    { $push: { activeDevices: { deviceId, refreshToken } } },
-    { new: true }
-    )
-
-    const userSafe = omit(updatedUser._doc, [
-        "__v",
-        "treinosConcluidos",
-        "nome",
-        "_id",
-        "status",
-        "idade",
-        "cpf",
-        "email",
-        "dataNascimento",
-        "telefone",
-        "sexo",
-        "nivel",
-        "unidade",
-        "turma",
-        "password",
-        "statusNivel",
-        "role",
-        "treinosPendentes",
-        "progresso",
-        "tokenVersion",
-        "criadoEm",
-        "desafiosConcluidos",
-        "userRanking",
-        "treinosFeitos",
-        "treinosTotais",
-        "treinosConcluidos",
-        "foto"
-    ]);
-
-    // note: we already have refreshToken variable; no need to read from user document
-    // const userRefreshToken = user.activeDevices[0].refreshToken;
-
-    return res.json({
-      accesstoken: accessToken,
-      RefreshToken: refreshToken
-    });
 }
+
 
 export const userData = async (req, res) => {
     try {
