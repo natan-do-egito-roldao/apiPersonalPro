@@ -1,0 +1,46 @@
+{
+  "name": "api-personal-pro",
+  "version": "1.0.0",
+  "description": "api do app personal pro",
+  "homepage": "https://github.com/natan-do-egito-roldao/personal-pro-api#readme",
+  "bugs": {
+    "url": "https://github.com/natan-do-egito-roldao/personal-pro-api/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/natan-do-egito-roldao/personal-pro-api.git"
+  },
+  "license": "ISC",
+  "author": "natan do egito roldao",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "cross-env NODE_ENV=production node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+  },
+  "dependencies": {
+    "agenda": "^5.0.0",
+    "bcryptjs": "^3.0.2",
+    "cloudinary": "^2.7.0",
+    "cors": "^2.8.6",
+    "crypto": "^1.0.1",
+    "dotenv": "^17.0.0",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.20.0",
+    "mongoose": "^8.19.2",
+    "multer": "^2.0.2",
+    "node-cron": "^4.2.1"
+  },
+  "devDependencies": {
+    "@jest/globals": "^30.0.3",
+    "cross-env": "^7.0.3",
+    "eslint": "^9.30.0",
+    "faker": "^6.6.6",
+    "jest": "^29.7.0",
+    "nodemon": "^3.1.10",
+    "prettier": "^3.6.2",
+    "supertest": "^6.3.4"
+  }
+}
