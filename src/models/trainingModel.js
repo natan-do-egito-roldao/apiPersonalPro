@@ -46,7 +46,7 @@ const grupoTreino = new mongoose.Schema({
   descricao: { type: String, required: true },
   tipo: { 
     type: String, 
-    enum: ["express",], 
+    enum: ["express", "personal", "familia"], 
     required: true 
   },
   Treinos: { type: [treino], required: true },
